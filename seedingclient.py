@@ -1,24 +1,49 @@
 import socket
 import pickle
+import threading
 
-client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-port = 8080
-# client.bind(('',port))
-# client.listen(5)
-# seedNodes = []
-servercom = socket.socket()
+def request(client,addr,peers):
 
-servercom.connect(('sl2-27.cse.iitb.ac.in',8080))
-print(servercom.recv(1024).decode())
-choice = int(input())
-servercom.send(str(choice).encode())
+	
+	client.send(pickle.dumps(peers))
+	client.send(("Terminating Connection\n").encode())
+	client.close()
+	
 
-if choice == 1 :
+if __name__ == '__main__':
+	client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	port = 8080
+	peers = []
+	listOfSeeds = []
+	threads = []
+	servercom = socket.socket()
+	servercom.connect(('sl2-27.cse.iitb.ac.in',8080))
 	print(servercom.recv(1024).decode())
-else :
-	listOfSeeds = pickle.loads(servercom.recv(1024))
-	print("List of Seed Node : ",listOfSeeds)	
-	print(servercom.recv(1024).decode())
-print(servercom.recv(1024).decode())
-servercom.close()
+	choice = int(input())
+	servercom.send(str(choice).encode())
+
+	if choice == 1 :
+		peers = pickle.loads(servercom.recv(1024))
+		print('Peers are loaded')
+
+	peerClient = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	peerClient.bind(('',port))
+	peerClient.listen(5)
+	for i in range(20):
+		threads.append(None)
+	while True:
+		b = True
+		client,addr = peerClient.accept()
+		for i in range(20) : 
+			if threads[i] == None :
+				threads[i] = threading.Thread(target=request,args=(client,addr,peers))
+				threads[i].start()
+				b = False
+				if not(addr[0] in peers) :
+					peers.append(addr[0])
+				break
+
+		if b :
+			client.send(("Peer is busy , unable to handle any request currently\n").encode())	
+
 	

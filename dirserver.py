@@ -7,12 +7,12 @@ def request(client,addr,seedNodes):
 	client.send(("Hello "+str(addr)+" - Welcome to D-Torrent\nHere's list of Commands : \n1 - Register Yourself as Seed\n2 - Retrieve list of available Seed Nodes\n").encode())
 	choice = int(client.recv(1024).decode())
 	if choice == 1 :
-		seedNodes.append(addr)
-		client.send(pickle.dumps("Added as Seed Node Successfully\n"))#client.send(("Added as Seed Node Successfully\n").encode())
+		if not(addr[0] in seedNodes):
+			seedNodes.append(addr[0])
 		client.send(pickle.dumps(seedNodes))
 	else :
 		client.send(pickle.dumps(seedNodes))
-		client.send(("Available Seed Nodes Sent Successfully\n").encode())
+		
 	
 	client.send(("Terminating Connection\n").encode())
 	client.close()
