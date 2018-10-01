@@ -19,12 +19,11 @@ if __name__ == '__main__':
 	servercom = socket.socket()
 	servercom.connect(('sl2-27.cse.iitb.ac.in',8080))
 	print(servercom.recv(1024).decode())
-	choice = int(input())
+	choice = 1
 	servercom.send(str(choice).encode())
 
-	if choice == 1 :
-		peers = pickle.loads(servercom.recv(1024))
-		print('Peers are loaded')
+	peers = pickle.loads(servercom.recv(1024))
+	print('Peers are loaded')
 
 	peerClient = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 	peerClient.bind(('',port))
