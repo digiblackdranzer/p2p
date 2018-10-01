@@ -36,7 +36,6 @@ for peer in peers[:3] :
 	except ConnectionRefusedError:
 		print("Peer ",peer," is offline")
 
-peers.remove()
 if len(peers) > 4 :
 	peerind = random.sample(range(len(peers)),4)
 	newpeers = []
