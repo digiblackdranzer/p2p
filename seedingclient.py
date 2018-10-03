@@ -4,7 +4,7 @@ import threading
 
 def request(client,addr,peers):
 
-	
+	print("Hola DEA")	
 	client.send(pickle.dumps(peers))
 	client.send(("Terminating Connection\n").encode())
 	client.close()
@@ -21,18 +21,22 @@ if __name__ == '__main__':
 	print(servercom.recv(1024).decode())
 	choice = 1
 	servercom.send(str(choice).encode())
-
 	peers = pickle.loads(servercom.recv(1024))
 	print('Peers are loaded')
+	servercom.close()
 
 	peerClient = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	print("Binding")
 	peerClient.bind(('',port))
+	print("Listening")
 	peerClient.listen(5)
 	for i in range(20):
 		threads.append(None)
 	while True:
+		print("Threading")
 		b = True
 		client,addr = peerClient.accept()
+		print("After accept")
 		for i in range(20) : 
 			if threads[i] == None :
 				threads[i] = threading.Thread(target=request,args=(client,addr,peers))

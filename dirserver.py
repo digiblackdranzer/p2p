@@ -4,7 +4,7 @@ import threading
 
 def request(client,addr,seedNodes):
 
-	client.send(("Hello "+str(addr)+" - Welcome to P2P Server\n").encode())
+	client.send(("Hello "+str(addr[0])+" - Welcome to P2P Server\n").encode())
 	choice = int(client.recv(1024).decode())
 	if choice == 1 :
 		if not(addr[0] in seedNodes):
