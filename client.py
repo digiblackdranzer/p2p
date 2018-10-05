@@ -16,6 +16,7 @@ def getHashes():
 
 def flood(peercons,client):
 	messages = client.recv(1024).decode()
+	print("Message Received : ",messages)
 	sha1hash = hashlib.sha1()
 	hashes = getHashes()
 	sha1hash.update(messages.encode())
@@ -88,8 +89,7 @@ for peer in peers[:3] :
 	try :
 		print("Peer : ",peer)
 		servercom = socket.socket()
-		servercom.connect((peer,port))	
-		print("Connected")
+		servercom.connect((peer,8081))	
 		peersOfPeer = pickle.loads(servercom.recv(1024))
 		print("List of Peers from ",peer," : ",peersOfPeer)
 		for newpeer in peersOfPeer :
@@ -126,7 +126,8 @@ for peer in peers :
 # Create 2 Flows - i) For Listening and flooding  ii) For generating messages
 # For this we use 1 thread
 
-listenClient = threading.Thread(target=request,args=(peers))
+listenClient = threading.Thread(target=request,args=(peers,))
+listenClient.start()
 hashes = []
 while True :
 	time.sleep(5)
