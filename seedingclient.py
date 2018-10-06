@@ -6,16 +6,37 @@ import time
 import datetime
 import random
 
+def logit(message):
+	logger = open(myip+"_logs.txt","a")
+	logger.write(message)
+	logger.close()
+
+def peerupdate():
+	while True :
+		time.sleep(10)
+		if len(peercons) == 4 :
+			return
+
+
+		if len(peercons) != len(peers) :
+			try :
+				servercom = socket.socket()
+				servercom.connect((peers[len(peercons)],port))
+				peercons.append(servercom)
+			except ConnectionRefusedError :
+				print("Peer ",peers[len(peercons)]," is offline")			
+
 def getHashes():
 	return hashes
 
 
 def addPeer(addr):
-	peers.append(addr)
+	peers.append(addr)	
 
 # Seed Logic
-def seed(peers,client):
+def seed(peers,client,addr):
 	print("Peers in seed() : ",peers)
+	addPeer(addr[0])
 	client.send(pickle.dumps(peers))
 	client.send(("Terminating Connection\n").encode())
 	client.close()
@@ -24,21 +45,24 @@ def seed(peers,client):
 # Flooding Logic
 
 def flood(peercons,client):
-	messages = client.recv(1024).decode()
-	print("Message Received : ",messages)
-	sha1hash = hashlib.sha1()
-	hashes = getHashes()
-	sha1hash.update(messages.encode())
-	msghash = sha1hash.hexdigest()
-	if not(msghash in hashes) :
-		print(messages)
-		hashes.append(msghash)
-		for peercon in peercons :
-			try :
-				peercon.send(messages.encode())
-			except ConnectionRefusedError :
-				print("Peer ",peer," is offline")	
-
+	
+	while True :
+		messages = client.recv(1024).decode()
+		if len(messages) > 0 :
+			print("Message Received : ",messages)
+		sha1hash = hashlib.sha1()
+		hashes = getHashes()
+		sha1hash.update(messages.encode())
+		msghash = sha1hash.hexdigest()
+		if not(msghash in hashes) :
+			logit(messages)
+			hashes.append(msghash)
+			for peercon in peercons :
+				try :
+					peercon.send(messages.encode())
+				except ConnectionRefusedError :
+					print("Peer ",peer," is offline")	
+		
 
 
 def msgrequest(peercons):
@@ -80,7 +104,7 @@ def seedrequest(peers):
 		for i in range(20) : 
 			if threads[i] == None :
 				print("Argument to seed() : ",peers)
-				threads[i] = threading.Thread(target=seed,args=(peers,client))
+				threads[i] = threading.Thread(target=seed,args=(peers,client,addr))
 				threads[i].start()
 				b = False
 				break
@@ -118,6 +142,8 @@ servercom.close()
 
 print("Chosen Peers for this Client are : ",peers)
 peercons = []
+if myip in peers :
+	peers.remove(myip)
 for peer in peers :
 	try :
 		servercom = socket.socket()
@@ -131,11 +157,16 @@ for peer in peers :
 # Create 3 Flows : i) To act as seed server  ii) Message Generation iii) Flooding
 print("Peercons : ",peercons)
 print("Peers : ",peers)
+
 listenClient = threading.Thread(target=msgrequest,args=(peercons,))
 seedClient = threading.Thread(target=seedrequest,args=(peers,))
+peerUpdateClient = threading.Thread(target=peerupdate)
 listenClient.start()
 seedClient.start()
+peerUpdateClient.start()
 hashes = []
+while len(peers) < 1:
+	pass
 while True :
 	time.sleep(5)
 	message  = str(datetime.datetime.now())+": "+myip+" pays "+str(random.randint(1,1000))+" BTC to "+peers[random.randint(0,len(peers)-1)]
@@ -145,6 +176,7 @@ while True :
 	mhash = sha1hash.hexdigest()
 	if mhash in hashes :
 		continue
+	logit(message)	
 	hashes.append(mhash)
 	for peercon in peercons :
 		try :

@@ -6,6 +6,10 @@ import time
 import datetime
 import hashlib
 
+def logit(message):
+	logger = open(myip+"_logs.txt","a")
+	logger.write(message+"\n")
+	logger.close()
 
 # Utilities
 
@@ -15,22 +19,25 @@ def getHashes():
 # Flooding Logic
 
 def flood(peercons,client):
-	messages = client.recv(1024).decode()
-	print("Message Received : ",messages)
-	sha1hash = hashlib.sha1()
-	hashes = getHashes()
-	sha1hash.update(messages.encode())
-	msghash = sha1hash.hexdigest()
-	if not(msghash in hashes) :
-		print(messages)
-		hashes.append(msghash)
-		for peercon in peercons :
-			try :
-				peercon.send(messages.encode())
-			except ConnectionRefusedError :
-				print("Peer ",peer," is offline")	
-
-
+	
+	while True :
+		messages = client.recv(1024).decode()
+		if len(messages) > 0 :
+			print("Message Received : ",messages)
+		sha1hash = hashlib.sha1()
+		hashes = getHashes()
+		sha1hash.update(messages.encode())
+		msghash = sha1hash.hexdigest()
+		if not(msghash in hashes) :
+			logit(messages)
+			print(messages)
+			hashes.append(msghash)
+			for peercon in peercons :
+				try :
+					peercon.send(messages.encode())
+				except ConnectionRefusedError :
+					print("Peer ",peer," is offline")	
+			
 
 def request(peercons):
 
@@ -113,6 +120,8 @@ if len(peers) > 4 :
 
 print("Chosen Peers for this Client are : ",peers)
 peercons = []
+if myip in peers :
+	peers.remove(myip)
 for peer in peers :
 	try :
 		servercom = socket.socket()
@@ -126,7 +135,7 @@ for peer in peers :
 # Create 2 Flows - i) For Listening and flooding  ii) For generating messages
 # For this we use 1 thread
 
-listenClient = threading.Thread(target=request,args=(peers,))
+listenClient = threading.Thread(target=request,args=(peercons,))
 listenClient.start()
 hashes = []
 while True :
@@ -135,7 +144,11 @@ while True :
 	print("Generated Message : ",message)
 	sha1hash = hashlib.sha1()
 	sha1hash.update(message.encode())
-	hashes.append(sha1hash.hexdigest())
+	mhash = sha1hash.hexdigest()
+	if mhash in hashes :
+		continue
+	logit(message)
+	hashes.append(mhash)
 	for peercon in peercons :
 		try :
 			peercon.send(message.encode())
